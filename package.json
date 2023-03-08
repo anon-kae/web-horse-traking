@@ -16,6 +16,7 @@
     "*.{js,vue}": "eslint --cache"
   },
   "dependencies": {
+    "@choujiaojiao/vue2-countdown": "^1.0.2",
     "@nuxtjs/axios": "^5.13.6",
     "chart.js": "^3.9.1",
     "core-js": "^3.19.3",

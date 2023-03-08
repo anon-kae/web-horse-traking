@@ -1,8 +1,25 @@
 // import { ref, onValue } from 'firebase/database';
 import { collection, query, where, getDocs, setDoc, getDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
-
+import ms from 'ms';
 export default function ({ database }, app, store) {
   return {
+    async onCountdown (trainingId) {
+      const { time, rounds } = await this.findTrainingById(trainingId);
+
+      const roundResult = rounds ? [...rounds] : []
+      const numberOfRound = rounds?.length ? rounds.length : 0;
+      roundResult.push({ name: `Round ${numberOfRound}`, createdAt: new Date() })
+      await updateDoc(doc(database, `Training/${trainingId}`), {
+        rounds: roundResult,
+      })
+
+      await store.dispatch(
+        'snackbar/setSuccessMessage',
+        'Create Round Successfully'
+      )
+
+      return ms(time);
+    },
     async findAll (status = 'ACTIVE') {
       const db = collection(database, 'Training');
       const qs = query(db, where('status', '==', status));
@@ -70,6 +87,7 @@ export default function ({ database }, app, store) {
         description,
         time,
         status: 'ACTIVE',
+        rounds: [],
         numberOfHorse: 0,
         createdAt: new Date()
       })

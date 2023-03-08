@@ -6,7 +6,7 @@
       </v-col>
 
       <v-col v-for="(training) in trainings" :key="training.id" cols="12" md="4">
-        <v-card dark width="500" height="200" @click="moreDetail(training)">
+        <v-card color="primary" dark width="500" height="200" @click="moreDetail(training)">
           <v-container class="fill-height">
             <v-row justify="center" align="center">
               <v-col cols="12">

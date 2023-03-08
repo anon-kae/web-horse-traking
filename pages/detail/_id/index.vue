@@ -21,11 +21,16 @@
             <v-tabs-slider />
 
             <v-tab href="#tab-1" class="text-capitalize">
+              Round
+              <v-icon>timer</v-icon>
+            </v-tab>
+
+            <v-tab href="#tab-2" class="text-capitalize">
               Horse
               <v-icon>bedroom_baby</v-icon>
             </v-tab>
 
-            <v-tab href="#tab-2" class="text-capitalize">
+            <v-tab href="#tab-3" class="text-capitalize">
               Summary
               <v-icon>query_stats</v-icon>
             </v-tab>
@@ -36,7 +41,39 @@
               <v-card flat>
                 <v-card-text>
                   <v-col cols="12" md="3">
-                    <v-card width="500" height="200">
+                    <v-btn
+                      color="primary"
+                      large
+                      dark
+                      @click="startCountdown">
+                      Timer Start
+                      <v-icon class="pl-2">
+                        mdi-alarm
+                      </v-icon>
+                    </v-btn>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-data-table
+                      :headers="headers"
+                      :items="desserts"
+                      item-key="name">
+                      <template #item.timer>
+                        <Countdown :time="timer / 1000" format="hh:mm:ss">
+                          <template slot-scope="{ time }">
+                            {{ time }}
+                          </template>
+                        </Countdown>
+                      </template>
+                    </v-data-table>
+                  </v-col>
+                </v-card-text>
+              </v-card>
+            </v-tab-item>
+            <v-tab-item value="tab-2">
+              <v-card flat>
+                <v-card-text>
+                  <v-col cols="12" md="3">
+                    <v-card width="500" height="200" color="primary" dark>
                       <v-container class="fill-height">
                         <v-row justify="center" align="center">
                           <v-col v-for="horse in details?.horses" :key="horse.id" cols="12">
@@ -44,9 +81,14 @@
                               <v-list-item-content>
                                 <v-list-item-title>
                                   <div class="d-flex justify-center text-h4">
-                                    {{ horse.speed ?? 0 }} km/h
+                                    {{ horse.horseName ?? 0 }}
                                   </div>
                                 </v-list-item-title>
+                                <v-list-item-subtitle>
+                                  <div class="d-flex justify-center text-h6">
+                                    {{ horse.speed ?? 0 }} km/h
+                                  </div>
+                                </v-list-item-subtitle>
                               </v-list-item-content>
                             </v-list-item>
                           </v-col>
@@ -57,7 +99,7 @@
                 </v-card-text>
               </v-card>
             </v-tab-item>
-            <v-tab-item value="tab-2">
+            <v-tab-item value="tab-3">
               <v-card-text>
                 <v-col cols="12">
                   <v-card>
@@ -74,17 +116,18 @@
 </template>
 
 <script>
+import Countdown from '@choujiaojiao/vue2-countdown';
 import ComponentLinChart from '../../../components/ComponentLinChart.vue'
 import { formatDate, formatMonth, formatYear, formatFullDate, formatRelativeDate } from '@/utils/dayjs';
 export default {
   name: 'IndexPage',
-  components: { ComponentLinChart },
+  components: { ComponentLinChart, Countdown },
   data () {
     return {
       details: {},
       tab: null,
-      text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
       title: '',
+      timer: 0,
       panel: [0, 1],
       formatter: {
         formatDate,
@@ -113,6 +156,15 @@ export default {
           },
         ],
       },
+      headers: [
+        {
+          text: 'Name',
+          align: 'start',
+          value: 'name',
+        },
+        { text: 'Timer', value: 'timer' },
+      ],
+      desserts: [],
     };
   },
   async created () {
@@ -126,6 +178,12 @@ export default {
       const horses = await this.$api.trainingService.findAllHorseByTrainingId(trainingId);
       const training = await this.$api.trainingService.findTrainingById(trainingId);
       this.details = { training, horses }
+      // this.desserts = this.details.training?.rounds ? [...this.details.training?.rounds] : []
+    },
+    async startCountdown () {
+      this.timer = await this.$api.trainingService.onCountdown(this.id)
+      await this.findAll(this.id)
+      this.desserts = [...this.details.training.rounds]
     },
     colorStatus (status) {
       const condition = {
