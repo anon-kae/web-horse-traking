@@ -44,7 +44,7 @@
                     <v-btn
                       color="primary"
                       large
-                      dark
+                      :disabled="isLoading"
                       @click="startCountdown">
                       Timer Start
                       <v-icon class="pl-2">
@@ -58,7 +58,11 @@
                       :items="desserts"
                       item-key="name">
                       <template #item.timer>
-                        <Countdown :time="timer / 1000" format="hh:mm:ss">
+                        <Countdown
+                          :time="timer / 1000"
+                          format="hh:mm:ss"
+                          @on-end="onEndCountdown"
+                          @on-countdown="onCountdown">
                           <template slot-scope="{ time }">
                             {{ time }}
                           </template>
@@ -71,30 +75,48 @@
             </v-tab-item>
             <v-tab-item value="tab-2">
               <v-card flat>
-                <v-card-text>
-                  <v-col cols="12" md="3">
-                    <v-card width="500" height="200" color="primary" dark>
-                      <v-container class="fill-height">
-                        <v-row justify="center" align="center">
-                          <v-col v-for="horse in details?.horses" :key="horse.id" cols="12">
+                <v-card-text class="d-flex justify-center">
+                  <v-col cols="12" md="8">
+                    <v-row justify="center">
+                      <v-expansion-panels inset>
+                        <v-expansion-panel v-for="horse in details?.horses" :key="horse.id">
+                          <v-expansion-panel-header>
+                            <b> Name: {{ horse.horseName }} </b>
+                          </v-expansion-panel-header>
+                          <v-expansion-panel-content>
                             <v-list-item two-line>
                               <v-list-item-content>
                                 <v-list-item-title>
-                                  <div class="d-flex justify-center text-h4">
-                                    {{ horse.horseName ?? 0 }}
-                                  </div>
-                                </v-list-item-title>
-                                <v-list-item-subtitle>
-                                  <div class="d-flex justify-center text-h6">
+                                  <v-chip
+                                    color="success"
+                                    label
+                                    outlined>
+                                    Best Speed:
                                     {{ horse.speed ?? 0 }} km/h
-                                  </div>
+                                  </v-chip>
+                                </v-list-item-title>
+                              </v-list-item-content>
+                            </v-list-item>
+                            <v-list-item two-line>
+                              <v-list-item-content>
+                                <v-list-item-title><b>Sex</b></v-list-item-title>
+                                <v-list-item-subtitle>
+                                  {{ horse.sex }}
                                 </v-list-item-subtitle>
                               </v-list-item-content>
                             </v-list-item>
-                          </v-col>
-                        </v-row>
-                      </v-container>
-                    </v-card>
+                            <v-list-item two-line>
+                              <v-list-item-content>
+                                <v-list-item-title><b>Species</b></v-list-item-title>
+                                <v-list-item-subtitle>
+                                  {{ horse.species }}
+                                </v-list-item-subtitle>
+                              </v-list-item-content>
+                            </v-list-item>
+                          </v-expansion-panel-content>
+                        </v-expansion-panel>
+                      </v-expansion-panels>
+                    </v-row>
                   </v-col>
                 </v-card-text>
               </v-card>
@@ -125,6 +147,7 @@ export default {
   data () {
     return {
       details: {},
+      isLoading: false,
       tab: null,
       title: '',
       timer: 0,
@@ -178,12 +201,25 @@ export default {
       const horses = await this.$api.trainingService.findAllHorseByTrainingId(trainingId);
       const training = await this.$api.trainingService.findTrainingById(trainingId);
       this.details = { training, horses }
-      // this.desserts = this.details.training?.rounds ? [...this.details.training?.rounds] : []
+      this.desserts = this.details.training?.rounds ? [...this.details.training?.rounds] : []
+      if (localStorage.getItem('time')) {
+        this.isLoading = true;
+        this.timer = parseInt(localStorage.getItem('time')) * 1000
+      }
     },
     async startCountdown () {
+      this.isLoading = true;
       this.timer = await this.$api.trainingService.onCountdown(this.id)
+      localStorage.setItem('time', (this.timer / 1000))
       await this.findAll(this.id)
       this.desserts = [...this.details.training.rounds]
+    },
+    onEndCountdown () {
+      localStorage.removeItem('time')
+      this.isLoading = false;
+    },
+    onCountdown (time) {
+      localStorage.setItem('time', time)
     },
     colorStatus (status) {
       const condition = {

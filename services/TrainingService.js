@@ -3,12 +3,41 @@ import { collection, query, where, getDocs, setDoc, getDoc, doc, deleteDoc, upda
 import ms from 'ms';
 export default function ({ database }, app, store) {
   return {
+    async onEndCountdown (trainingId) {
+      const { time, rounds } = await this.findTrainingById(trainingId);
+
+      const roundResult = rounds ? [...rounds] : []
+      const numberOfRound = rounds?.length ? rounds.length : 0;
+
+      roundResult.push({
+        status: 'START',
+        name: `Round ${numberOfRound}`,
+        createdAt: new Date(),
+      })
+
+      await updateDoc(doc(database, `Training/${trainingId}`), {
+        rounds: roundResult,
+      })
+
+      await store.dispatch(
+        'snackbar/setSuccessMessage',
+        'Create Round Successfully'
+      )
+
+      return ms(time);
+    },
     async onCountdown (trainingId) {
       const { time, rounds } = await this.findTrainingById(trainingId);
 
       const roundResult = rounds ? [...rounds] : []
       const numberOfRound = rounds?.length ? rounds.length : 0;
-      roundResult.push({ name: `Round ${numberOfRound}`, createdAt: new Date() })
+
+      roundResult.push({
+        status: 'START',
+        name: `Round ${numberOfRound}`,
+        createdAt: new Date(),
+      })
+
       await updateDoc(doc(database, `Training/${trainingId}`), {
         rounds: roundResult,
       })
