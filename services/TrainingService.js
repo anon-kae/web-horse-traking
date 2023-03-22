@@ -3,16 +3,14 @@ import { collection, query, where, getDocs, setDoc, getDoc, doc, deleteDoc, upda
 import ms from 'ms';
 export default function ({ database }, app, store) {
   return {
-    async onEndCountdown (trainingId) {
-      const { time, rounds } = await this.findTrainingById(trainingId);
-
+    async onEndCountdown (trainingId, { name }) {
+      const { rounds } = await this.findTrainingById(trainingId);
       const roundResult = rounds ? [...rounds] : []
-      const numberOfRound = rounds?.length ? rounds.length : 0;
 
-      roundResult.push({
-        status: 'START',
-        name: `Round ${numberOfRound}`,
-        createdAt: new Date(),
+      roundResult.forEach((e) => {
+        if (e.name === name) {
+          e.status = 'END'
+        }
       })
 
       await updateDoc(doc(database, `Training/${trainingId}`), {
@@ -21,10 +19,8 @@ export default function ({ database }, app, store) {
 
       await store.dispatch(
         'snackbar/setSuccessMessage',
-        'Create Round Successfully'
+        'Timeout'
       )
-
-      return ms(time);
     },
     async onCountdown (trainingId) {
       const { time, rounds } = await this.findTrainingById(trainingId);
@@ -40,6 +36,8 @@ export default function ({ database }, app, store) {
 
       await updateDoc(doc(database, `Training/${trainingId}`), {
         rounds: roundResult,
+        timerStart: 'START',
+        round: numberOfRound
       })
 
       await store.dispatch(
@@ -47,7 +45,7 @@ export default function ({ database }, app, store) {
         'Create Round Successfully'
       )
 
-      return ms(time);
+      return { ms: ms(time), round: numberOfRound };
     },
     async findAll (status = 'ACTIVE') {
       const db = collection(database, 'Training');

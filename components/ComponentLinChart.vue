@@ -26,11 +26,11 @@ export default {
       defaultChartOptions: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: {
-          duration: 0 // general animation time
-        },
         hover: {
-          animationDuration: 0 // duration of animations when hovering an item
+          animationDuration: 1 // duration of animations when hovering an item
+        },
+        interaction: {
+          mode: 'nearest',
         },
         responsiveAnimationDuration: 0, // animation duration after a resize
         legend: {
@@ -56,6 +56,9 @@ export default {
             }
           },
           xAxes: {
+            ticks: {
+              beginAtZero: true
+            },
             grid: {
               color: 'rgba(196, 196, 196, 0.3)'
             }

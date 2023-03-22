@@ -57,16 +57,21 @@
                       :headers="headers"
                       :items="desserts"
                       item-key="name">
-                      <template #item.timer>
-                        <Countdown
-                          :time="timer / 1000"
-                          format="hh:mm:ss"
-                          @on-end="onEndCountdown"
-                          @on-countdown="onCountdown">
-                          <template slot-scope="{ time }">
-                            {{ time }}
-                          </template>
-                        </Countdown>
+                      <template #item.timer="{ item }">
+                        <div v-if="item.status !== 'END'">
+                          <Countdown
+                            :time="timer.ms / 1000"
+                            format="hh:mm:ss"
+                            @on-end="onEndCountdown(item)"
+                            @on-countdown="onCountdown">
+                            <template slot-scope="{ time }">
+                              {{ time }}
+                            </template>
+                          </Countdown>
+                        </div>
+                        <div v-else>
+                          Time out
+                        </div>
                       </template>
                     </v-data-table>
                   </v-col>
@@ -138,6 +143,7 @@
 </template>
 
 <script>
+import mqtt from 'mqtt';
 import Countdown from '@choujiaojiao/vue2-countdown';
 import ComponentLinChart from '../../../components/ComponentLinChart.vue'
 import { formatDate, formatMonth, formatYear, formatFullDate, formatRelativeDate } from '@/utils/dayjs';
@@ -146,11 +152,13 @@ export default {
   components: { ComponentLinChart, Countdown },
   data () {
     return {
+      client: null,
       details: {},
       isLoading: false,
       tab: null,
       title: '',
-      timer: 0,
+      timer: {},
+      round: 0,
       panel: [0, 1],
       formatter: {
         formatDate,
@@ -164,19 +172,26 @@ export default {
         labels: ['a', 'a', 'a', 'a', 'a'],
         datasets: [
           {
-            label: 'Round 1',
-            data: [2, 1, 16, 3, 2],
+            label: 'Accelerometer',
+            data: [],
             backgroundColor: 'rgba(20, 255, 0, 0.3)',
             borderColor: 'rgb(75, 192, 192)',
             borderWidth: 2,
           },
-          {
-            label: 'Round 2',
-            data: [3, 2, 17, 4, 3],
-            backgroundColor: 'rgba(20, 255, 0, 0.3)',
-            borderColor: 'rgb(75, 192, 192)',
-            borderWidth: 2,
-          },
+          // {
+          //   label: 'Accelerometer Y',
+          //   data: [],
+          //   backgroundColor: 'rgba(20, 255, 0, 0.3)',
+          //   borderColor: 'rgb(75, 192, 192)',
+          //   borderWidth: 2,
+          // },
+          // {
+          //   label: 'Accelerometer Z',
+          //   data: [],
+          //   backgroundColor: 'rgba(20, 255, 0, 0.3)',
+          //   borderColor: 'rgb(75, 192, 192)',
+          //   borderWidth: 2,
+          // },
         ],
       },
       headers: [
@@ -191,8 +206,37 @@ export default {
     };
   },
   async created () {
+    this.client = mqtt.connect('mqtt://157.245.53.254', { port: 8083, username: 'horse-traking', password: '123456' });
+
     this.id = this.$route.params.id
     this.title = this.$route.query.title
+
+    this.client.subscribe('AcX')
+    // this.client.subscribe('AcY')
+    // this.client.subscribe('AcZ')
+    this.client.on('message', (topic, payload) => {
+      // alert([topic, payload].join(': '))
+      // const condition = {
+      //   'AcX': function() { this.chartData.datasets[0].data.push(payload) },
+      //   'AcY': function() { this.chartData.datasets[1].data.push(payload) },
+      //   'AcZ': function() { this.chartData.datasets[2].data.push(payload) },
+      // }
+      this.chartData.datasets[0].data.push({ x: new Date(), y: payload })
+      // this.chartData.datasets[1].data.push({ x: new Date(), y: payload })
+      // this.chartData.datasets[2].data.push({ x: new Date(), y: payload })
+      // condition[topic];
+      // console.log(payload)
+      // if (payload !== 'END') {
+      //   this.chartData.datasets.push({
+      //     label: `Round ${this.round}}`,
+      //     data: [],
+      //     backgroundColor: 'rgba(20, 255, 0, 0.3)',
+      //     borderColor: 'rgb(75, 192, 192)',
+      //     borderWidth: 2,
+      //   });
+      // this.chartData.datasets[this.round].data.push(payload)
+      // }
+    });
 
     await this.findAll(this.id)
   },
@@ -204,19 +248,30 @@ export default {
       this.desserts = this.details.training?.rounds ? [...this.details.training?.rounds] : []
       if (localStorage.getItem('time')) {
         this.isLoading = true;
-        this.timer = parseInt(localStorage.getItem('time')) * 1000
+        this.timer.ms = parseInt(localStorage.getItem('time')) * 1000
       }
     },
     async startCountdown () {
       this.isLoading = true;
       this.timer = await this.$api.trainingService.onCountdown(this.id)
-      localStorage.setItem('time', (this.timer / 1000))
+      localStorage.setItem('time', (this.timer.ms / 1000))
+      this.round = this.timer.rounds;
+      this.chartData.datasets.push({
+        label: `Round ${this.round}}`,
+        data: [],
+        backgroundColor: 'rgba(20, 255, 0, 0.3)',
+        borderColor: 'rgb(75, 192, 192)',
+        borderWidth: 2,
+      });
       await this.findAll(this.id)
       this.desserts = [...this.details.training.rounds]
     },
-    onEndCountdown () {
+    async onEndCountdown (item) {
+      await this.$api.trainingService.onEndCountdown(this.id, item)
       localStorage.removeItem('time')
       this.isLoading = false;
+      await this.findAll(this.id)
+      this.desserts = [...this.details.training.rounds]
     },
     onCountdown (time) {
       localStorage.setItem('time', time)
