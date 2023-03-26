@@ -23,6 +23,10 @@ export function formatDate (dayjsCompatibleDate) {
   return dayjs(dayjsCompatibleDate).format('DD MMMM YYYY')
 }
 
+export function formatTime (dayjsCompatibleDate) {
+  return dayjs(dayjsCompatibleDate).format('h:mm:ss A')
+}
+
 export function formatYear (dayjsCompatibleDate) {
   return dayjs(dayjsCompatibleDate).format('YYYY')
 }

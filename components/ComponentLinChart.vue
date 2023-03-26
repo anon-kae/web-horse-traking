@@ -29,9 +29,6 @@ export default {
         hover: {
           animationDuration: 1 // duration of animations when hovering an item
         },
-        interaction: {
-          mode: 'nearest',
-        },
         responsiveAnimationDuration: 0, // animation duration after a resize
         legend: {
           position: 'bottom',

@@ -22,6 +22,16 @@ export default function ({ database }, app, store) {
         'Timeout'
       )
     },
+    async addValueOnMQTT (trainingId, round, value) {
+      const { rounds } = await this.findTrainingById(trainingId);
+      const roundResult = rounds ? [...rounds] : []
+
+      // roundResult[round].labs
+
+      await updateDoc(doc(database, `Training/${trainingId}`), {
+        rounds: roundResult,
+      })
+    },
     async onCountdown (trainingId) {
       const { time, rounds } = await this.findTrainingById(trainingId);
 

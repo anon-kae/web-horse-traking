@@ -33,6 +33,7 @@ export default {
     '~/plugins/api.js',
     // '~/plugins/vue-chartjs',
     { src: '~/plugins/vue-chartjs', mode: 'client' },
+    { src: '~/plugins/apex-chart.js', mode: 'client' },
     '~/plugins/vuex-persisted-state.client.js',
   ],
 

@@ -31,6 +31,10 @@
             </v-tab>
 
             <v-tab href="#tab-3" class="text-capitalize">
+              Monitoring
+              <v-icon>stacked_line_chart</v-icon>
+            </v-tab>
+            <v-tab href="#tab-4" class="text-capitalize">
               Summary
               <v-icon>query_stats</v-icon>
             </v-tab>
@@ -127,13 +131,32 @@
               </v-card>
             </v-tab-item>
             <v-tab-item value="tab-3">
-              <v-card-text>
+              <v-card-text v-if="round !== null">
                 <v-col cols="12">
                   <v-card>
-                    <component-lin-chart :chart-data="chartData" />
+                    <ComponentLineChartFront :round="round" />
+                  </v-card>
+                </v-col>
+                <v-col cols="12">
+                  <v-card>
+                    <ComponentLineChartBack :round="round" />
                   </v-card>
                 </v-col>
               </v-card-text>
+            </v-tab-item>
+            <v-tab-item value="tab-4">
+              <!-- <v-card-text>
+                <v-col cols="12">
+                  <v-card>
+                    <ComponentLineChartFront :round="round" />
+                  </v-card>
+                </v-col>
+                <v-col cols="12">
+                  <v-card>
+                    <ComponentLineChartBack :round="round" />
+                  </v-card>
+                </v-col>
+              </v-card-text> -->
             </v-tab-item>
           </v-tabs-items>
         </v-card>
@@ -143,13 +166,13 @@
 </template>
 
 <script>
-import mqtt from 'mqtt';
 import Countdown from '@choujiaojiao/vue2-countdown';
-import ComponentLinChart from '../../../components/ComponentLinChart.vue'
+import ComponentLineChartBack from '../../../components/ComponentLineChartBack.vue'
+import ComponentLineChartFront from '../../../components/ComponentLineChartFront.vue'
 import { formatDate, formatMonth, formatYear, formatFullDate, formatRelativeDate } from '@/utils/dayjs';
 export default {
   name: 'IndexPage',
-  components: { ComponentLinChart, Countdown },
+  components: { Countdown, ComponentLineChartBack, ComponentLineChartFront },
   data () {
     return {
       client: null,
@@ -158,7 +181,7 @@ export default {
       tab: null,
       title: '',
       timer: {},
-      round: 0,
+      round: null,
       panel: [0, 1],
       formatter: {
         formatDate,
@@ -168,32 +191,6 @@ export default {
         formatRelativeDate
       },
       id: null,
-      chartData: {
-        labels: ['a', 'a', 'a', 'a', 'a'],
-        datasets: [
-          {
-            label: 'Accelerometer',
-            data: [],
-            backgroundColor: 'rgba(20, 255, 0, 0.3)',
-            borderColor: 'rgb(75, 192, 192)',
-            borderWidth: 2,
-          },
-          // {
-          //   label: 'Accelerometer Y',
-          //   data: [],
-          //   backgroundColor: 'rgba(20, 255, 0, 0.3)',
-          //   borderColor: 'rgb(75, 192, 192)',
-          //   borderWidth: 2,
-          // },
-          // {
-          //   label: 'Accelerometer Z',
-          //   data: [],
-          //   backgroundColor: 'rgba(20, 255, 0, 0.3)',
-          //   borderColor: 'rgb(75, 192, 192)',
-          //   borderWidth: 2,
-          // },
-        ],
-      },
       headers: [
         {
           text: 'Name',
@@ -206,37 +203,8 @@ export default {
     };
   },
   async created () {
-    this.client = mqtt.connect('mqtt://157.245.53.254', { port: 8083, username: 'horse-traking', password: '123456' });
-
     this.id = this.$route.params.id
     this.title = this.$route.query.title
-
-    this.client.subscribe('AcX')
-    // this.client.subscribe('AcY')
-    // this.client.subscribe('AcZ')
-    this.client.on('message', (topic, payload) => {
-      // alert([topic, payload].join(': '))
-      // const condition = {
-      //   'AcX': function() { this.chartData.datasets[0].data.push(payload) },
-      //   'AcY': function() { this.chartData.datasets[1].data.push(payload) },
-      //   'AcZ': function() { this.chartData.datasets[2].data.push(payload) },
-      // }
-      this.chartData.datasets[0].data.push({ x: new Date(), y: payload })
-      // this.chartData.datasets[1].data.push({ x: new Date(), y: payload })
-      // this.chartData.datasets[2].data.push({ x: new Date(), y: payload })
-      // condition[topic];
-      // console.log(payload)
-      // if (payload !== 'END') {
-      //   this.chartData.datasets.push({
-      //     label: `Round ${this.round}}`,
-      //     data: [],
-      //     backgroundColor: 'rgba(20, 255, 0, 0.3)',
-      //     borderColor: 'rgb(75, 192, 192)',
-      //     borderWidth: 2,
-      //   });
-      // this.chartData.datasets[this.round].data.push(payload)
-      // }
-    });
 
     await this.findAll(this.id)
   },
@@ -256,13 +224,6 @@ export default {
       this.timer = await this.$api.trainingService.onCountdown(this.id)
       localStorage.setItem('time', (this.timer.ms / 1000))
       this.round = this.timer.rounds;
-      this.chartData.datasets.push({
-        label: `Round ${this.round}}`,
-        data: [],
-        backgroundColor: 'rgba(20, 255, 0, 0.3)',
-        borderColor: 'rgb(75, 192, 192)',
-        borderWidth: 2,
-      });
       await this.findAll(this.id)
       this.desserts = [...this.details.training.rounds]
     },
