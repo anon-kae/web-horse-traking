@@ -1,5 +1,5 @@
 # Dockerfile
-FROM node:16-slim as dependencies
+FROM node:12-slim as dependencies
 RUN mkdir -p /user/app
 WORKDIR /user/app
 
