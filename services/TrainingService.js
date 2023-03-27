@@ -15,6 +15,7 @@ export default function ({ database }, app, store) {
 
       await updateDoc(doc(database, `Training/${trainingId}`), {
         rounds: roundResult,
+        timerStatus: 'END',
       })
 
       await store.dispatch(
@@ -46,7 +47,7 @@ export default function ({ database }, app, store) {
 
       await updateDoc(doc(database, `Training/${trainingId}`), {
         rounds: roundResult,
-        timerStart: 'START',
+        timerStatus: 'START',
         round: numberOfRound
       })
 
