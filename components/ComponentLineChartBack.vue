@@ -16,6 +16,7 @@ export default {
   name: 'LandingPage',
   data () {
     return {
+      data: [],
       options: {
         chart: {
           id: 'realtime',
@@ -86,12 +87,15 @@ export default {
       const length = value.length;
       if (length > 2) {
         const [AcX, AcY, AcZ] = value;
+        const now = new Date();
+        this.data.push({ value: { AcX, AcY, AcZ }, date: now })
 
-        this.series[0].data.push({ x: new Date(), y: parseInt(AcX) })
-        this.series[1].data.push({ x: new Date(), y: parseInt(AcY) })
-        this.series[2].data.push({ x: new Date(), y: parseInt(AcZ) })
+        this.series[0].data.push({ x: now, y: parseInt(AcX) })
+        this.series[1].data.push({ x: now, y: parseInt(AcY) })
+        this.series[2].data.push({ x: now, y: parseInt(AcZ) })
 
         this.$refs.chart.updateSeries(this.series, false, true);
+        localStorage.setItem('labs2', JSON.stringify(this.data));
       } else {
         this.$refs.chart.updateSeries(this.series, false, true);
       }

@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <ApexCharts
-      ref="chart"
+      ref="chartBackHistory"
       :options="options"
       :series="series"
       chart-id="lineChart" />
@@ -10,13 +10,16 @@
 </template>
 
 <script>
-import mqtt from 'mqtt';
 import { formatTime } from '../utils/dayjs';
 export default {
   name: 'LandingPage',
   props: {
-    round: {
-      type: Number,
+    valueChart: {
+      type: Array || Object,
+      required: true
+    },
+    title: {
+      type: String,
       required: true
     }
   },
@@ -50,14 +53,14 @@ export default {
           curve: 'smooth'
         },
         title: {
-          text: 'Front sensor',
+          text: 'Back sensor',
           align: 'left'
         },
         markers: {
           size: 0
         },
         legend: {
-          show: true,
+          show: true
         },
         xaxis: {
           type: 'datetime',
@@ -86,26 +89,16 @@ export default {
     }
   },
   mounted () {
-    this.client = mqtt.connect('mqtt://157.245.53.254', { port: 8083, username: 'horse-traking', password: '123456' });
-    this.client.subscribe('horse/accumulator/one')
-    this.client.on('message', (topic, payload) => {
-      const value = payload.toString().split(',')
-      const length = value.length;
-      if (length > 2) {
-        const [AcX, AcY, AcZ] = value;
-        const now = new Date();
-        this.data.push({ value: { AcX, AcY, AcZ }, date: now })
+    this.valueChart.forEach(({ date, value }) => {
+      this.series[0].data.push({ x: new Date(date), y: parseInt(value.AcX) })
+      this.series[1].data.push({ x: new Date(date), y: parseInt(value.AcY) })
+      this.series[2].data.push({ x: new Date(date), y: parseInt(value.AcZ) })
+    })
 
-        this.series[0].data.push({ x: now, y: parseInt(AcX) })
-        this.series[1].data.push({ x: now, y: parseInt(AcY) })
-        this.series[2].data.push({ x: now, y: parseInt(AcZ) })
-
-        this.$refs.chart.updateSeries(this.series, false, true);
-
-        localStorage.setItem('labs1', JSON.stringify(this.data));
-      } else {
-        this.data = []
-        this.$refs.chart.updateSeries(this.series, false, true);
+    this.$refs.chartBackHistory.updateSeries(this.series, false, true);
+    this.$refs.chartBackHistory.updateOptions({
+      title: {
+        text: `Back sensor of ${this.title}`
       }
     })
   },

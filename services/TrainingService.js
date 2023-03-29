@@ -3,13 +3,31 @@ import { collection, query, where, getDocs, setDoc, getDoc, doc, deleteDoc, upda
 import ms from 'ms';
 export default function ({ database }, app, store) {
   return {
-    async onEndCountdown (trainingId, { name }) {
+    async filterDate (trainingId, { start, end }) {
+      const { rounds } = await this.findTrainingById(trainingId);
+      const roundResult = rounds ? [...rounds] : []
+      const data = roundResult.filter(sensor => {
+        return new Date(sensor.createdAt?.toDate()) >= new Date(start) ||
+          new Date(sensor.createdAt?.toDate()) <= new Date(end);
+      });
+
+      return data.map(e => {
+        return {
+          ...e,
+          frontSensor: e.frontSensor ? e.frontSensor.map(fs => ({ ...fs })) : [],
+          backSensor: e.backSensor ? e.backSensor.map(bs => ({ ...bs })) : []
+        }
+      })
+    },
+    async onEndCountdown (trainingId, { name }, lab1, lab2) {
       const { rounds } = await this.findTrainingById(trainingId);
       const roundResult = rounds ? [...rounds] : []
 
       roundResult.forEach((e) => {
         if (e.name === name) {
           e.status = 'END'
+          e.frontSensor = lab1
+          e.backSensor = lab2
         }
       })
 

@@ -145,23 +145,112 @@
               </v-card-text>
             </v-tab-item>
             <v-tab-item value="tab-4">
-              <!-- <v-card-text>
-                <v-col cols="12">
-                  <v-card>
-                    <ComponentLineChartFront :round="round" />
-                  </v-card>
+              <v-card-text class="d-flex ustify-center">
+                <v-col cols="12" md="5">
+                  <v-menu
+                    ref="menu"
+                    v-model="menu1"
+                    :close-on-content-click="false"
+                    :return-value.sync="date1"
+                    transition="scale-transition"
+                    offset-y
+                    min-width="auto">
+                    <template #activator="{ on, attrs }">
+                      <v-text-field
+                        v-model="date1"
+                        label="Start date"
+                        prepend-icon="mdi-calendar"
+                        readonly
+                        v-bind="attrs"
+                        v-on="on" />
+                    </template>
+                    <v-date-picker
+                      v-model="date1"
+                      no-title
+                      :max="date2"
+                      scrollable>
+                      <v-spacer />
+                      <v-btn
+                        text
+                        color="primary"
+                        @click="menu1 = false">
+                        Cancel
+                      </v-btn>
+                      <v-btn
+                        text
+                        color="primary"
+                        @click="saveDate1">
+                        OK
+                      </v-btn>
+                    </v-date-picker>
+                  </v-menu>
                 </v-col>
-                <v-col cols="12">
-                  <v-card>
-                    <ComponentLineChartBack :round="round" />
-                  </v-card>
+                <v-col cols="12" md="5">
+                  <v-menu
+                    ref="menu2"
+                    v-model="menu2"
+                    :close-on-content-click="false"
+                    :return-value.sync="date2"
+                    transition="scale-transition"
+                    offset-y
+                    min-width="auto">
+                    <template #activator="{ on, attrs }">
+                      <v-text-field
+                        v-model="date2"
+                        label="End date"
+                        prepend-icon="mdi-calendar"
+                        readonly
+                        v-bind="attrs"
+                        v-on="on" />
+                    </template>
+                    <v-date-picker
+                      v-model="date2"
+                      no-title
+                      :min="date1"
+                      scrollable>
+                      <v-spacer />
+                      <v-btn
+                        text
+                        color="primary"
+                        @click="menu2 = false">
+                        Cancel
+                      </v-btn>
+                      <v-btn
+                        text
+                        color="primary"
+                        @click="saveDate2">
+                        OK
+                      </v-btn>
+                    </v-date-picker>
+                  </v-menu>
                 </v-col>
-              </v-card-text> -->
+                <v-col cols="12" md="2" class="d-flex align-center">
+                  <v-btn
+                    depressed
+                    color="primary"
+                    @click="filterDate">
+                    Search
+                  </v-btn>
+                </v-col>
+              </v-card-text>
             </v-tab-item>
           </v-tabs-items>
         </v-card>
       </v-col>
     </v-row>
+    <br>
+    <v-card>
+      <div v-if="historyChart.length > 0">
+        <v-row v-for="(item, index) in historyChart" :key="index">
+          <v-col cols="12" md="6">
+            <ComponentLineChartFrontHistory :title="item.name" :value-chart="item.frontSensor" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <ComponentLineChartBackHistory :title="item.name" :value-chart="item.backSensor" />
+          </v-col>
+        </v-row>
+      </div>
+    </v-card>
   </v-container>
 </template>
 
@@ -169,10 +258,18 @@
 import Countdown from '@choujiaojiao/vue2-countdown';
 import ComponentLineChartBack from '../../../components/ComponentLineChartBack.vue'
 import ComponentLineChartFront from '../../../components/ComponentLineChartFront.vue'
+import ComponentLineChartFrontHistory from '../../../components/ComponentLineChartFrontHistory.vue'
+import ComponentLineChartBackHistory from '../../../components/ComponentLineChartBackHistory.vue'
 import { formatDate, formatMonth, formatYear, formatFullDate, formatRelativeDate } from '@/utils/dayjs';
 export default {
   name: 'IndexPage',
-  components: { Countdown, ComponentLineChartBack, ComponentLineChartFront },
+  components: {
+    Countdown,
+    ComponentLineChartBack,
+    ComponentLineChartFront,
+    ComponentLineChartFrontHistory,
+    ComponentLineChartBackHistory
+  },
   data () {
     return {
       client: null,
@@ -200,7 +297,17 @@ export default {
         { text: 'Timer', value: 'timer' },
       ],
       desserts: [],
+      date1: null,
+      menu1: false,
+      date2: null,
+      menu2: false,
+      historyChart: []
     };
+  },
+  watch: {
+    historyChart (val) {
+      this.historyChart = val
+    }
   },
   async created () {
     this.id = this.$route.params.id
@@ -209,6 +316,22 @@ export default {
     await this.findAll(this.id)
   },
   methods: {
+    saveDate1 () {
+      this.$refs.menu.save(this.date1)
+      this.menu1 = false
+    },
+    saveDate2 () {
+      this.$refs.menu2.save(this.date2)
+      this.menu2 = false
+    },
+    async filterDate () {
+      const query = {
+        start: this.date1,
+        end: this.date2
+      }
+      this.historyChart = await this.$api.trainingService.filterDate(this.id, query);
+      console.log(this.historyChart)
+    },
     async findAll (trainingId) {
       const horses = await this.$api.trainingService.findAllHorseByTrainingId(trainingId);
       const training = await this.$api.trainingService.findTrainingById(trainingId);
@@ -228,7 +351,12 @@ export default {
       this.desserts = [...this.details.training.rounds]
     },
     async onEndCountdown (item) {
-      await this.$api.trainingService.onEndCountdown(this.id, item)
+      const lab1 = JSON.parse(localStorage.getItem('labs1'));
+      const lab2 = JSON.parse(localStorage.getItem('lab2s'));
+
+      await this.$api.trainingService.onEndCountdown(this.id, item, lab1, lab2)
+      localStorage.removeItem('labs1')
+      localStorage.removeItem('labs2')
       localStorage.removeItem('time')
       this.isLoading = false;
       await this.findAll(this.id)
