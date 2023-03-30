@@ -15,8 +15,8 @@ import { formatTime } from '../utils/dayjs';
 export default {
   name: 'LandingPage',
   props: {
-    round: {
-      type: Number,
+    timeStatus: {
+      type: String,
       required: true
     }
   },
@@ -89,9 +89,9 @@ export default {
     this.client = mqtt.connect('mqtt://157.245.53.254', { port: 8083, username: 'horse-traking', password: '123456' });
     this.client.subscribe('horse/accumulator/one')
     this.client.on('message', (topic, payload) => {
-      const value = payload.toString().split(',')
-      const length = value.length;
-      if (length > 2) {
+      this.$refs.chart.updateSeries(this.series, false, true);
+      if (this.timeStatus === 'start') {
+        const value = payload.toString().split(',')
         const [AcX, AcY, AcZ] = value;
         const now = new Date();
         this.data.push({ value: { AcX, AcY, AcZ }, date: now })
@@ -103,9 +103,9 @@ export default {
         this.$refs.chart.updateSeries(this.series, false, true);
 
         localStorage.setItem('labs1', JSON.stringify(this.data));
-      } else {
+      } else if (this.timeStatus === 'end') {
+        localStorage.setItem('labs1', JSON.stringify(this.data));
         this.data = []
-        this.$refs.chart.updateSeries(this.series, false, true);
       }
     })
   },

@@ -134,12 +134,12 @@
               <v-card-text v-if="round !== null">
                 <v-col cols="12">
                   <v-card>
-                    <ComponentLineChartFront :round="round" />
+                    <ComponentLineChartFront :time-status="timeStatus" />
                   </v-card>
                 </v-col>
                 <v-col cols="12">
                   <v-card>
-                    <ComponentLineChartBack :round="round" />
+                    <ComponentLineChartBack :time-status="timeStatus" />
                   </v-card>
                 </v-col>
               </v-card-text>
@@ -280,6 +280,7 @@ export default {
       timer: {},
       round: null,
       panel: [0, 1],
+      timeStatus: null,
       formatter: {
         formatDate,
         formatMonth,
@@ -307,6 +308,9 @@ export default {
   watch: {
     historyChart (val) {
       this.historyChart = val
+    },
+    timeStatus (val) {
+      this.timeStatus = val
     }
   },
   async created () {
@@ -348,6 +352,7 @@ export default {
       localStorage.setItem('time', (this.timer.ms / 1000))
       this.round = this.timer.rounds;
       await this.findAll(this.id)
+      this.timeStatus = 'start'
       this.desserts = [...this.details.training.rounds]
     },
     async onEndCountdown (item) {
@@ -358,9 +363,11 @@ export default {
       localStorage.removeItem('labs1')
       localStorage.removeItem('labs2')
       localStorage.removeItem('time')
+      localStorage.removeItem('timeStatus')
       this.isLoading = false;
       await this.findAll(this.id)
       this.desserts = [...this.details.training.rounds]
+      this.timeStatus = 'end'
     },
     onCountdown (time) {
       localStorage.setItem('time', time)

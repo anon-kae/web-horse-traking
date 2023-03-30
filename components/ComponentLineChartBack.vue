@@ -14,6 +14,12 @@ import mqtt from 'mqtt';
 import { formatTime } from '../utils/dayjs';
 export default {
   name: 'LandingPage',
+  props: {
+    timeStatus: {
+      type: String,
+      required: true
+    }
+  },
   data () {
     return {
       data: [],
@@ -83,9 +89,9 @@ export default {
     this.client = mqtt.connect('mqtt://157.245.53.254', { port: 8083, username: 'horse-traking', password: '123456' });
     this.client.subscribe('horse/accumulator/two')
     this.client.on('message', (topic, payload) => {
-      const value = payload.toString().split(',')
-      const length = value.length;
-      if (length > 2) {
+      this.$refs.chart.updateSeries(this.series, false, true);
+      if (this.timeStatus === 'start') {
+        const value = payload.toString().split(',')
         const [AcX, AcY, AcZ] = value;
         const now = new Date();
         this.data.push({ value: { AcX, AcY, AcZ }, date: now })
@@ -93,11 +99,12 @@ export default {
         this.series[0].data.push({ x: now, y: parseInt(AcX) })
         this.series[1].data.push({ x: now, y: parseInt(AcY) })
         this.series[2].data.push({ x: now, y: parseInt(AcZ) })
+        this.$refs.chart.updateSeries(this.series, false, true);
 
-        this.$refs.chart.updateSeries(this.series, false, true);
         localStorage.setItem('labs2', JSON.stringify(this.data));
-      } else {
-        this.$refs.chart.updateSeries(this.series, false, true);
+      } else if (this.timeStatus === 'end') {
+        localStorage.setItem('labs2', JSON.stringify(this.data));
+        this.data = []
       }
     })
   },
