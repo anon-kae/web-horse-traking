@@ -334,7 +334,6 @@ export default {
         end: this.date2
       }
       this.historyChart = await this.$api.trainingService.filterDate(this.id, query);
-      console.log(this.historyChart)
     },
     async findAll (trainingId) {
       const horses = await this.$api.trainingService.findAllHorseByTrainingId(trainingId);
