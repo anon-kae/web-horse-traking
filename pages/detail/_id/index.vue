@@ -357,7 +357,7 @@ export default {
     },
     async onEndCountdown (item) {
       const lab1 = JSON.parse(localStorage.getItem('labs1'));
-      const lab2 = JSON.parse(localStorage.getItem('lab2s'));
+      const lab2 = JSON.parse(localStorage.getItem('labs2'));
 
       await this.$api.trainingService.onEndCountdown(this.id, item, lab1, lab2)
       localStorage.removeItem('labs1')
